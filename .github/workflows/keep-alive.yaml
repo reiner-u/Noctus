@@ -1,0 +1,20 @@
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    # Every 3 days at 12:00 UTC — inside Supabase's ~7 day inactivity window
+    - cron: '0 12 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          curl -sf -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/assignments?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+
+# Note: RLS blocks the anon key from returning actual rows. The request
+# still reaches the database, which is sufficient to register as activity.
