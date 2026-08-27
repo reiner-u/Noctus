@@ -2,12 +2,12 @@
 
 import {createClient} from '@/lib/supabase/client';
 
-export default function LoginPage() {
+export default function MainPage() {
     const supabase = createClient();
 
     async function Logout() {
         const { error } = await supabase.auth.signOut();
-        window.location.href = '${window.location.origin}/login';
+        window.location.href = `${window.location.origin}/login`;
         if (error) {
             console.error('Error during logout:', error.message);
         } else {
