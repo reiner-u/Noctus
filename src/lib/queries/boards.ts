@@ -3,9 +3,9 @@ import type { Board, BoardView } from '@/lib/types';
 
 export async function getBoards(): Promise<Board[]> {
     const supabase = await createClient();
-    // TODO: select * from boards, order by created_at.
-    // RLS already scopes results to the current user — no manual
-    // owner_id filter needed in the query itself.
+    // TODO: select all from boards, ordered by created_at.
+    // RLS already scopes this to the current user, so I don't need
+    // to filter by owner_id myself.
     const { data, error } = await supabase
         .from('boards')
         .select('*')
@@ -21,15 +21,14 @@ export async function getBoards(): Promise<Board[]> {
 
 export async function getBoard(boardId: string) {
     const supabase = await createClient();
-    // TODO: four queries (or look into Supabase's nested `select`
-    // syntax for fetching related tables in one round-trip, worth
-    // researching once the simple version works):
+    // TODO: four queries here for now. Maybe switch to Supabase's
+    // nested select syntax later so it's one round trip instead of
+    // four, but get the simple version working first.
     //   1. the board itself, filtered by id
     //   2. its properties, filtered by board_id, ordered by sort_order
     //   3. its entries, filtered by board_id, ordered by sort_order
-    //   4. cell_values where entry_id is .in(...) the entry ids from (3)
-    // Return all four together — this is what board/[boardId]/page.tsx
-    // will pass into <BoardTable>.
+    //   4. cell_values where entry_id is .in(...) the entry ids from step 3
+    // Return all four together, since BoardTable needs all of them.
     const { data: board, error: boardError } = await supabase
         .from('boards')
         .select('*')
