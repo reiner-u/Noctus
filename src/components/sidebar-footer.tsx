@@ -2,26 +2,29 @@
 
 import {createClient} from '@/lib/supabase/client';
 
-export default function MainPage() {
+export function SidebarFooter({ user }: { user: any }) {
     const supabase = createClient();
 
-    async function Logout() {
+    async function handleSignOut() {
         const { error } = await supabase.auth.signOut();
-        window.location.href = `${window.location.origin}/login`;
         if (error) {
-            console.error('Error during logout:', error.message);
+            console.error('Error during sign out:', error.message);
         } else {
-            console.log('Logged out successfully');
+            console.log('Signed out successfully');
+            window.location.href = `${window.location.origin}/login`;
         }
     }
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen py-2">
+        <div className = "p-4 border-t">
+            <header className="text-sm font-semibold mb-2">Signed in as</header>
+            <div className="text-sm mb-4">{user?.email || 'Unknown user'}</div>
             <button
-                onClick={Logout}
-                className="mt-6 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                onClick={handleSignOut}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
             >
-                Logout
+                Sign Out
             </button>
         </div>
-    )};
+    );
+}
