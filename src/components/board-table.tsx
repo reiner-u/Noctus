@@ -20,20 +20,7 @@ interface BoardTableProps {
 }
 
 export function BoardTable({ properties, entries, cellValues }: BoardTableProps) {
-    // TODO: build columns from properties instead of hand writing a
-    // fixed array. Something like:
-    //
-    //   const columns = useMemo(() => properties.map(prop => ({
-    //     id: prop.id,
-    //     header: prop.name,
-    //     cell: (info) => {
-    //       // look up the cell value for this entry and prop.id
-    //       // render TextCell, NumberCell, DateCell, or BooleanCell
-    //       // depending on prop.type
-    //     },
-    //   })), [properties]);
-    //
-    const columns = useMemo(() => { properties.map((prop) => ({
+    const columns = useMemo(() => properties.map((prop) => ({
             id: prop.id,
             header: prop.name,
             cell: (info: any) => {
@@ -43,26 +30,47 @@ export function BoardTable({ properties, entries, cellValues }: BoardTableProps)
                 }
                 switch (prop.type) {
                     case 'text':
-                        return <TextCell value={cellValue.value} />;
+                        return (
+                            <TextCell
+                                value={cellValue.value_text}
+                                onChange={(newValue) => {
+                                    console.log(`entry ${info.row.original.id}, property ${prop.id} changed to`, newValue);
+                                }}
+                            />
+                        );
                     case 'number':
-                        return <NumberCell value={cellValue.value} />;
+                        return (
+                            <NumberCell
+                                value={cellValue.value_number}
+                                onChange={(newValue) => {
+                                    console.log(`entry ${info.row.original.id}, property ${prop.id} changed to`, newValue);
+                                }}
+                            />
+                        );
                     case 'date':
-                        return <DateCell value={cellValue.value} />;
+                        return (
+                            <DateCell
+                                value={cellValue.value_date ? new Date(cellValue.value_date) : null}
+                                onChange={(newValue) => {
+                                    console.log(`entry ${info.row.original.id}, property ${prop.id} changed to`, newValue);
+                                }}
+                            />
+                        );
                     case 'boolean':
-                        return <BooleanCell value={cellValue.value} />;
+                        return (
+                            <BooleanCell
+                                value={cellValue.value_boolean}
+                                onChange={(newValue) => {
+                                    console.log(`entry ${info.row.original.id}, property ${prop.id} changed to`, newValue);
+                                }}
+                            />
+                        );
                     default:
                         return null;
                 }
             },
-        }));
-    }, [properties]);
-    // TODO: build data, one object per entry. Build a Map from
-    // cellValues keyed by entry_id plus property_id first, so the
-    // cell renderer above is an O(1) lookup instead of a .find() scan.
-    //
-    // TODO: useReactTable({ data, columns, getCoreRowModel: getCoreRowModel() })
-    // then render a table using flexRender for headers and cells, same
-    // shape as any basic TanStack Table example in their docs.
+        })), [properties]);
+
     const data = useMemo(() => {
         const entryMap = new Map<string, any>();
         entries.forEach((entry) => {
@@ -77,9 +85,25 @@ export function BoardTable({ properties, entries, cellValues }: BoardTableProps)
         getCoreRowModel: getCoreRowModel(),
     });
 
-    return <table>{/* still need the actual markup here */ table.getHeaderGroups().map((headerGroup) => (
-        <thead>
-            {headerGroup.headers.map((header) => (
-                <th>{flexRender(header.column.columnDef.header, header.getContext())}</th>
-            ))}</thead>
-    ))}</table>; }
+    return ( 
+        <table>
+            <thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                    <th key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</th>
+                ))}
+                </tr>
+            ))}
+            </thead>
+            <tbody>
+            {table.getRowModel().rows.map((row) => (
+                <tr key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                ))}
+                </tr>
+            ))}
+            </tbody>
+        </table>
+    );}
