@@ -12,7 +12,9 @@ import { TextCell } from '@/components/cell-inputs/text-cell';
 import { NumberCell } from '@/components/cell-inputs/number-cell';
 import { DateCell } from '@/components/cell-inputs/date-cell';
 import { BooleanCell } from '@/components/cell-inputs/boolean-cell';
-import { addProperty } from '@/lib/actions/boards';
+import { addEntry, addProperty, updateCellValue } from '@/lib/actions/boards';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 
 interface BoardTableProps {
     boardId: string;
@@ -26,17 +28,19 @@ export function BoardTable({ boardId, properties, entries, cellValues }: BoardTa
             id: prop.id,
             header: prop.name,
             cell: (info: any) => {
-                const cellValue = cellValues.find((cv) => cv.entry_id === info.row.original.id && cv.property_id === prop.id);
-                if (!cellValue) {
-                    return null;
-                }
+                const cellValue = cellValues.find((cv) => cv.entry_id === info.row.original.id && cv.property_id === prop.id) ?? {
+                    value_text: null,
+                    value_number: null,
+                    value_date: null,
+                    value_boolean: null,
+                };
                 switch (prop.type) {
                     case 'text':
                         return (
                             <TextCell
                                 value={cellValue.value_text}
                                 onChange={(newValue) => {
-                                    console.log(`entry ${info.row.original.id}, property ${prop.id} changed to`, newValue);
+                                    updateCellValue(boardId, info.row.original.id, prop.id, 'text', newValue);
                                 }}
                             />
                         );
@@ -45,7 +49,7 @@ export function BoardTable({ boardId, properties, entries, cellValues }: BoardTa
                             <NumberCell
                                 value={cellValue.value_number}
                                 onChange={(newValue) => {
-                                    console.log(`entry ${info.row.original.id}, property ${prop.id} changed to`, newValue);
+                                    updateCellValue(boardId, info.row.original.id, prop.id, 'number', newValue);
                                 }}
                             />
                         );
@@ -54,7 +58,7 @@ export function BoardTable({ boardId, properties, entries, cellValues }: BoardTa
                             <DateCell
                                 value={cellValue.value_date ? new Date(cellValue.value_date) : null}
                                 onChange={(newValue) => {
-                                    console.log(`entry ${info.row.original.id}, property ${prop.id} changed to`, newValue);
+                                    updateCellValue(boardId, info.row.original.id, prop.id, 'date', newValue);
                                 }}
                             />
                         );
@@ -63,7 +67,7 @@ export function BoardTable({ boardId, properties, entries, cellValues }: BoardTa
                             <BooleanCell
                                 value={cellValue.value_boolean}
                                 onChange={(newValue) => {
-                                    console.log(`entry ${info.row.original.id}, property ${prop.id} changed to`, newValue);
+                                    updateCellValue(boardId, info.row.original.id, prop.id, 'boolean', newValue);
                                 }}
                             />
                         );
@@ -88,36 +92,44 @@ export function BoardTable({ boardId, properties, entries, cellValues }: BoardTa
     });
 
     return ( 
-        <table>
+        <table className="border-collapse">
             <thead>
             {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                    <th key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</th>
+                    <th key={header.id} className="border-b border-r px-4 py-2 text-left font-semibold">{flexRender(header.column.columnDef.header, header.getContext())}</th>
                 ))}
-                <th>
-                    {/* TODO: a plain "+" button here. This file's already
-                        a client component, so addProperty can be called
-                        directly on click, no form wrapper needed:
-                          onClick={() => addProperty(boardId, 'New property', 'text')}
-                        Defaults to a text property named 'New property',
-                        same instant-create-then-rename pattern as
-                        createBoard's 'Untitled board'. Renaming and
-                        changing the type afterward isn't built yet,
-                        that's its own separate piece, not needed to get
-                        this working. */}
-                </th>
+                    <th className="border-b px-2 py-2">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => addProperty(boardId, 'New property', 'text')}
+                        >
+                            <Plus />
+                        </Button>
+                    </th>
                 </tr>
             ))}
             </thead>
             <tbody>
-            {table.getRowModel().rows.map((row) => (
-                <tr key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                {table.getRowModel().rows.map((row) => (
+                    <tr key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                        <td key={cell.id} className="border-b border-r px-4 py-2">{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                    ))}
+                    </tr>
                 ))}
+                <tr>
+                    <td className="px-2 py-2">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => addEntry(boardId)}
+                        >
+                            <Plus />
+                        </Button>
+                    </td>
                 </tr>
-            ))}
             </tbody>
         </table>
     );}
