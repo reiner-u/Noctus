@@ -1,6 +1,7 @@
 'use client';
 
 import {createClient} from '@/lib/supabase/client';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export function SidebarFooter({ user }: { user: any }) {
     const supabase = createClient();
@@ -17,7 +18,10 @@ export function SidebarFooter({ user }: { user: any }) {
 
     return (
         <div className = "p-4 border-t">
-            <header className="text-sm font-semibold mb-2">Signed in as</header>
+            <div className="flex items-center justify-between mb-2">
+                <header className="text-sm font-semibold">Signed in as</header>
+                <ThemeToggle />
+            </div>
             <div className="text-sm mb-4">{user?.email || 'Unknown user'}</div>
             <button
                 onClick={handleSignOut}
