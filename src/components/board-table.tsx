@@ -12,14 +12,16 @@ import { TextCell } from '@/components/cell-inputs/text-cell';
 import { NumberCell } from '@/components/cell-inputs/number-cell';
 import { DateCell } from '@/components/cell-inputs/date-cell';
 import { BooleanCell } from '@/components/cell-inputs/boolean-cell';
+import { addProperty } from '@/lib/actions/boards';
 
 interface BoardTableProps {
+    boardId: string;
     properties: Property[];
     entries: BoardEntry[];
     cellValues: CellValue[];
 }
 
-export function BoardTable({ properties, entries, cellValues }: BoardTableProps) {
+export function BoardTable({ boardId, properties, entries, cellValues }: BoardTableProps) {
     const columns = useMemo(() => properties.map((prop) => ({
             id: prop.id,
             header: prop.name,
@@ -93,6 +95,18 @@ export function BoardTable({ properties, entries, cellValues }: BoardTableProps)
                 {headerGroup.headers.map((header) => (
                     <th key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</th>
                 ))}
+                <th>
+                    {/* TODO: a plain "+" button here. This file's already
+                        a client component, so addProperty can be called
+                        directly on click, no form wrapper needed:
+                          onClick={() => addProperty(boardId, 'New property', 'text')}
+                        Defaults to a text property named 'New property',
+                        same instant-create-then-rename pattern as
+                        createBoard's 'Untitled board'. Renaming and
+                        changing the type afterward isn't built yet,
+                        that's its own separate piece, not needed to get
+                        this working. */}
+                </th>
                 </tr>
             ))}
             </thead>

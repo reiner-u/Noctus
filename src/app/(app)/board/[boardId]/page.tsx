@@ -16,5 +16,5 @@ export default async function BoardPage({
     if (!boardData) {
         return <div>Board not found</div>;
     }
-    return <BoardTable properties={boardData.properties} entries={boardData.entries} cellValues={boardData.cellValues} />;
+    return <BoardTable boardId={boardId} properties={boardData.properties} entries={boardData.entries} cellValues={boardData.cellValues} />;
 }
