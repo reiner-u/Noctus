@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Board } from '@/lib/types';
 import { SidebarFooter } from '@/components/sidebar-footer';
+import { createBoard } from '@/lib/actions/boards';
 
 export function Sidebar({ user, boards }: { user: /* TODO: type this once I have a real User type */ any; boards: Board[] }) {
     return (
@@ -11,7 +12,9 @@ export function Sidebar({ user, boards }: { user: /* TODO: type this once I have
                     {board.title}
                 </Link>
             )) }
-            <button className="w-full p-4 text-left hover:bg-gray-100">+ New board</button>
+            <form action={createBoard} className="p-4">
+                <button className="w-full p-4 text-left hover:bg-gray-100">+ New board</button>
+            </form>
         </div>
         <SidebarFooter user={user} />
         </aside>
