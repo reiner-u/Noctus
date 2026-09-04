@@ -12,9 +12,9 @@ import { TextCell } from '@/components/cell-inputs/text-cell';
 import { NumberCell } from '@/components/cell-inputs/number-cell';
 import { DateCell } from '@/components/cell-inputs/date-cell';
 import { BooleanCell } from '@/components/cell-inputs/boolean-cell';
-import { addEntry, addProperty, updateCellValue } from '@/lib/actions/boards';
+import { addEntry, addProperty, updateCellValue, deleteProperty, deleteEntry } from '@/lib/actions/boards';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 
 interface BoardTableProps {
     boardId: string;
@@ -26,7 +26,25 @@ interface BoardTableProps {
 export function BoardTable({ boardId, properties, entries, cellValues }: BoardTableProps) {
     const columns = useMemo(() => properties.map((prop) => ({
             id: prop.id,
-            header: prop.name,
+            // header can be a function too, same as cell below, it's just
+            // been a plain string until now since there was nothing else
+            // to render up here.
+            header: () => (
+                <div className="flex items-center justify-between gap-2">
+                    <span>{prop.name}</span>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                            if (confirm(`Delete "${prop.name}"? This deletes every value stored under it too.`)) {
+                                deleteProperty(prop.id, boardId);
+                            }
+                        }}
+                    >
+                        <Trash2 />
+                    </Button>
+                </div>
+            ),
             cell: (info: any) => {
                 const cellValue = cellValues.find((cv) => cv.entry_id === info.row.original.id && cv.property_id === prop.id) ?? {
                     value_text: null,
@@ -117,6 +135,19 @@ export function BoardTable({ boardId, properties, entries, cellValues }: BoardTa
                     {row.getVisibleCells().map((cell) => (
                         <td key={cell.id} className="border-b border-r px-4 py-2">{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
                     ))}
+                    <td className="border-b px-2 py-2">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                                if (confirm('Delete this row? This deletes every value in it too.')) {
+                                    deleteEntry(row.original.id, boardId);
+                                }
+                            }}
+                        >
+                            <Trash2 />
+                        </Button>
+                    </td>
                     </tr>
                 ))}
                 <tr>

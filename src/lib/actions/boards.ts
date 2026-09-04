@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { PropertyType } from '@/lib/types';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 
 export async function createBoard() {
     const supabase = await createClient();
@@ -125,7 +126,18 @@ export async function deleteBoard(boardId: string) {
     }
 
     revalidatePath('/', 'layout');
-    redirect ('/');  
+
+    // Only bounce to home if the board being deleted is the one whose
+    // page actually submitted this action. Deleting a different board
+    // from the sidebar shouldn't kick you off the one you're looking at.
+    // The referer header holds the URL of the page the form was on,
+    // something like https://noctus.app/board/abc123, so pulling the
+    // id out of that and comparing to boardId tells us which case this is.
+    const referer = (await headers()).get('referer');
+    const viewedBoardId = referer?.match(/\/board\/([^/?#]+)/)?.[1];
+    if (viewedBoardId === boardId) {
+        redirect('/');
+    }
 }
 
 export async function deleteProperty(propertyId: string, boardId: string) {
