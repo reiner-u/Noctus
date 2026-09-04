@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { Property, CellValue, PropertyType } from '@/lib/types';
 import { updateProperty, deleteProperty } from '@/lib/actions/boards';
 import { Button } from '@/components/ui/button';
-import { Trash2, Check, X } from 'lucide-react';
+import { Trash2, Check, X, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 
 const PROPERTY_TYPES: PropertyType[] = ['text', 'number', 'date', 'boolean'];
 
@@ -12,9 +12,15 @@ interface PropertyHeaderProps {
     property: Property;
     boardId: string;
     cellValues: CellValue[];
+    // TanStack's Column object for this header, typed loosely (matches
+    // the `info: any` pattern already used for cell renderers elsewhere).
+    // Gives access to column.getIsSorted() ('asc' | 'desc' | false) and
+    // column.getToggleSortingHandler() (an onClick-ready function, cycles
+    // asc -> desc -> off on each click).
+    column: any;
 }
 
-export function PropertyHeader({ property, boardId, cellValues }: PropertyHeaderProps) {
+export function PropertyHeader({ property, boardId, cellValues, column }: PropertyHeaderProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [draftName, setDraftName] = useState(property.name);
     const [draftType, setDraftType] = useState<PropertyType>(property.type);
@@ -94,6 +100,11 @@ export function PropertyHeader({ property, boardId, cellValues }: PropertyHeader
             >
                 {property.name}
             </span>
+            {/* TODO: Button variant="ghost" size="icon", onClick={column.getToggleSortingHandler()}
+               (that's already the right event handler shape, no wrapping
+               arrow function needed). Icon depends on column.getIsSorted():
+               ArrowUp when 'asc', ArrowDown when 'desc', ArrowUpDown when
+               false (not sorted). */}
             <Button
                 variant="ghost"
                 size="icon"
