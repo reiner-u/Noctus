@@ -12,9 +12,10 @@ import { TextCell } from '@/components/cell-inputs/text-cell';
 import { NumberCell } from '@/components/cell-inputs/number-cell';
 import { DateCell } from '@/components/cell-inputs/date-cell';
 import { BooleanCell } from '@/components/cell-inputs/boolean-cell';
-import { addEntry, addProperty, updateCellValue, deleteProperty, deleteEntry } from '@/lib/actions/boards';
+import { addEntry, addProperty, updateCellValue, deleteEntry } from '@/lib/actions/boards';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2 } from 'lucide-react';
+import { PropertyHeader } from '@/components/property-header';
 
 interface BoardTableProps {
     boardId: string;
@@ -26,24 +27,12 @@ interface BoardTableProps {
 export function BoardTable({ boardId, properties, entries, cellValues }: BoardTableProps) {
     const columns = useMemo(() => properties.map((prop) => ({
             id: prop.id,
-            // header can be a function too, same as cell below, it's just
-            // been a plain string until now since there was nothing else
-            // to render up here.
+            // header can be a function too, same as cell below. It's a
+            // whole component now (PropertyHeader) rather than inline JSX,
+            // since renaming/retyping needs its own local edit-mode state,
+            // which a plain arrow function can't hold.
             header: () => (
-                <div className="flex items-center justify-between gap-2">
-                    <span>{prop.name}</span>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                            if (confirm(`Delete "${prop.name}"? This deletes every value stored under it too.`)) {
-                                deleteProperty(prop.id, boardId);
-                            }
-                        }}
-                    >
-                        <Trash2 />
-                    </Button>
-                </div>
+                <PropertyHeader property={prop} boardId={boardId} cellValues={cellValues} />
             ),
             cell: (info: any) => {
                 const cellValue = cellValues.find((cv) => cv.entry_id === info.row.original.id && cv.property_id === prop.id) ?? {

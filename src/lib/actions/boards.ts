@@ -140,6 +140,53 @@ export async function deleteBoard(boardId: string) {
     }
 }
 
+export async function updateProperty(propertyId: string, boardId: string, name: string, type: PropertyType) {
+    const supabase = await createClient();
+
+    // A pure rename (same type, new name) should never touch cell_values,
+    // only an actual type change clears data, checked against what's
+    // actually stored server-side rather than trusting the client.
+    const { data: currentProperty, error: fetchError } = await supabase
+        .from('properties')
+        .select('type')
+        .eq('id', propertyId)
+        .single();
+    if (fetchError) {
+        throw new Error(`Failed to fetch property: ${fetchError.message}`);
+    }
+
+    // Clearing all four typed columns (not just the old type's) matters:
+    // going text -> number -> text later shouldn't resurface leftover
+    // value_text data as if it were never gone.
+    if (currentProperty.type !== type) {
+        const { error: clearError } = await supabase
+            .from('cell_values')
+            .update({
+                value_text: null,
+                value_number: null,
+                value_date: null,
+                value_boolean: null,
+            })
+            .eq('property_id', propertyId);
+        if (clearError) {
+            throw new Error(`Failed to clear cell values: ${clearError.message}`);
+        }
+    }
+
+    const { error: updateError } = await supabase
+        .from('properties')
+        .update({
+            name,
+            type,
+        })
+        .eq('id', propertyId); 
+    if (updateError) {
+        throw new Error(`Failed to update property: ${updateError.message}`);
+    }
+    
+    revalidatePath(`/board/${boardId}`);
+}
+
 export async function deleteProperty(propertyId: string, boardId: string) {
     const supabase = await createClient();
 
