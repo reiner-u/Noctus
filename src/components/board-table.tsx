@@ -18,22 +18,30 @@ import { DateCell } from '@/components/cell-inputs/date-cell';
 import { BooleanCell } from '@/components/cell-inputs/boolean-cell';
 import { addEntry, addProperty, updateCellValue, deleteEntry } from '@/lib/actions/boards';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import { PropertyHeader } from '@/components/property-header';
 import { EntryPanel } from '@/components/entry-panel';
+import { BoardToolbar } from '@/components/board-toolbar';
 
 interface BoardTableProps {
     boardId: string;
+    boardTitle: string;
     properties: Property[];
     entries: BoardEntry[];
     cellValues: CellValue[];
 }
 
-export function BoardTable({ boardId, properties, entries, cellValues }: BoardTableProps) {
+export function BoardTable({ boardId, boardTitle, properties, entries, cellValues }: BoardTableProps) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     // Which entry (if any) the side panel is showing, null means closed.
     const [openEntryId, setOpenEntryId] = useState<string | null>(null);
+    const [showFilters, setShowFilters] = useState(false);
+
+    async function handleAddEntry() {
+        const newEntryId = await addEntry(boardId);
+        setOpenEntryId(newEntryId);
+    }
 
     const columns = useMemo(() => properties.map((prop) => ({
             id: prop.id,
@@ -163,6 +171,14 @@ export function BoardTable({ boardId, properties, entries, cellValues }: BoardTa
 
     return ( 
         <>
+        <BoardToolbar
+            boardId={boardId}
+            boardTitle={boardTitle}
+            onAddProperty={() => addProperty(boardId, 'New property', 'text')}
+            onAddEntry={handleAddEntry}
+            showFilters={showFilters}
+            onToggleFilters={() => setShowFilters((prev) => !prev)}
+        />
         <table className="border-collapse">
             <thead>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -171,16 +187,8 @@ export function BoardTable({ boardId, properties, entries, cellValues }: BoardTa
                 {headerGroup.headers.map((header) => (
                     <th key={header.id} className="border-b border-r px-4 py-2 text-left font-semibold">{flexRender(header.column.columnDef.header, header.getContext())}</th>
                 ))}
-                    <th className="border-b px-2 py-2">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => addProperty(boardId, 'New property', 'text')}
-                        >
-                            <Plus />
-                        </Button>
-                    </th>
                 </tr>
+                {showFilters && (
                 <tr>
                 {headerGroup.headers.map((header) => {
                     const type = (header.column.columnDef.meta as any)?.type;
@@ -256,8 +264,8 @@ export function BoardTable({ boardId, properties, entries, cellValues }: BoardTa
                         </th>
                     );
                 })}
-                    <th className="border-b px-2 py-1"></th>
                 </tr>
+                )}
                 </Fragment>
             ))}
             </thead>
@@ -282,20 +290,6 @@ export function BoardTable({ boardId, properties, entries, cellValues }: BoardTa
                     </td>
                     </tr>
                 ))}
-                <tr>
-                    <td className="px-2 py-2">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={async () => {
-                                const newEntryId = await addEntry(boardId);
-                                setOpenEntryId(newEntryId);
-                            }}
-                        >
-                            <Plus />
-                        </Button>
-                    </td>
-                </tr>
             </tbody>
         </table>
         <EntryPanel
