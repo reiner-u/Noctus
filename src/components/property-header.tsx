@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { Property, PropertyOption, CellValue, PropertyType } from '@/lib/types';
 import { updateProperty, deleteProperty, addPropertyOption, deletePropertyOption } from '@/lib/actions/boards';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,11 @@ export function PropertyHeader({ property, boardId, cellValues, propertyOptions,
     const [draftName, setDraftName] = useState(property.name);
     const [draftType, setDraftType] = useState<PropertyType>(property.type);
     const [newOptionLabel, setNewOptionLabel] = useState('');
+    // Escape sets this before blur has a chance to fire, so the
+    // container's onBlur can check "was this just cancelled?" and skip
+    // saving instead of undoing the cancel right after it happens, same
+    // pattern BoardHeader uses for its title/description fields.
+    const cancelledRef = useRef(false);
 
     // This property's own options, out of the board-wide list passed
     // down (same "filter the shared array by this property's id"
@@ -67,6 +72,7 @@ export function PropertyHeader({ property, boardId, cellValues, propertyOptions,
     }
 
     function handleCancel() {
+        cancelledRef.current = true;
         setDraftName(property.name);
         setDraftType(property.type);
         setIsEditing(false);
@@ -74,7 +80,23 @@ export function PropertyHeader({ property, boardId, cellValues, propertyOptions,
 
     if (isEditing) {
         return (
-            <div className="flex flex-col gap-2">
+            <div
+                className="flex flex-col gap-2"
+                onBlur={(e) => {
+                    // If focus is moving to something still inside this
+                    // edit UI (the type select, Save/Cancel, the
+                    // add-option input), that's not "clicking away",
+                    // just moving between controls in the same session.
+                    if (e.currentTarget.contains(e.relatedTarget as Node)) {
+                        return;
+                    }
+                    if (cancelledRef.current) {
+                        cancelledRef.current = false;
+                        return;
+                    }
+                    handleSave();
+                }}
+            >
                 <div className="flex items-center gap-2">
                     <input
                         type="text"
@@ -85,7 +107,7 @@ export function PropertyHeader({ property, boardId, cellValues, propertyOptions,
                             if (e.key === 'Escape') handleCancel();
                         }}
                         autoFocus
-                        className="w-full rounded border border-input bg-background px-2 py-1 text-sm"
+                        className="w-full min-w-24 rounded border border-input bg-background px-2 py-1 text-sm"
                     />
                     <select
                         value={draftType}
