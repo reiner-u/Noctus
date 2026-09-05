@@ -1,5 +1,6 @@
 import { getBoard } from '@/lib/queries/boards';
 import { BoardTable } from '@/components/board-table';
+import { BoardHeader } from '@/components/board-header';
 
 export default async function BoardPage({
     params,
@@ -18,6 +19,7 @@ export default async function BoardPage({
     }
     return (
         <div className="p-6">
+            <BoardHeader board={boardData.board} />
             <BoardTable boardId={boardId} properties={boardData.properties} entries={boardData.entries} cellValues={boardData.cellValues} />
         </div>
     );

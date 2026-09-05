@@ -123,6 +123,20 @@ export async function updateCellValue(
     revalidatePath(`/board/${boardId}`);
 }
 
+export async function updateBoard(boardId: string, title: string, description: string | null) {
+    const supabase = await createClient();
+
+    const { error } = await supabase
+        .from('boards')
+        .update({ title, description })
+        .eq('id', boardId);
+    if (error) {
+        throw new Error(`Failed to update board: ${error.message}`);
+    }
+
+    revalidatePath(`/board/${boardId}`);
+}
+
 export async function deleteBoard(boardId: string) {
     const supabase = await createClient();
 
