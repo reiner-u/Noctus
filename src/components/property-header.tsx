@@ -100,11 +100,13 @@ export function PropertyHeader({ property, boardId, cellValues, column }: Proper
             >
                 {property.name}
             </span>
-            {/* TODO: Button variant="ghost" size="icon", onClick={column.getToggleSortingHandler()}
-               (that's already the right event handler shape, no wrapping
-               arrow function needed). Icon depends on column.getIsSorted():
-               ArrowUp when 'asc', ArrowDown when 'desc', ArrowUpDown when
-               false (not sorted). */}
+            <Button
+                variant="ghost"
+                size="icon"
+                onClick={column.getToggleSortingHandler()}
+            >
+                {column.getIsSorted() === 'asc' ? <ArrowUp /> : column.getIsSorted() === 'desc' ? <ArrowDown /> : <ArrowUpDown />}
+            </Button>
             <Button
                 variant="ghost"
                 size="icon"

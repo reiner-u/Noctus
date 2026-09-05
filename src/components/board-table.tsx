@@ -20,6 +20,7 @@ import { addEntry, addProperty, updateCellValue, deleteEntry } from '@/lib/actio
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2 } from 'lucide-react';
 import { PropertyHeader } from '@/components/property-header';
+import { EntryPanel } from '@/components/entry-panel';
 
 interface BoardTableProps {
     boardId: string;
@@ -30,11 +31,9 @@ interface BoardTableProps {
 
 export function BoardTable({ boardId, properties, entries, cellValues }: BoardTableProps) {
     const [sorting, setSorting] = useState<SortingState>([]);
-    // TODO: not filled in yet. Same idea as sorting above, just for
-    // filters, holds a ColumnFiltersState array (each entry shaped like
-    // { id: columnId, value: whateverThatColumn'sFilterFnExpects }),
-    // starting empty ([]).
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+    // Which entry (if any) the side panel is showing, null means closed.
+    const [openEntryId, setOpenEntryId] = useState<string | null>(null);
 
     const columns = useMemo(() => properties.map((prop) => ({
             id: prop.id,
@@ -163,6 +162,7 @@ export function BoardTable({ boardId, properties, entries, cellValues }: BoardTa
     });
 
     return ( 
+        <>
         <table className="border-collapse">
             <thead>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -184,22 +184,75 @@ export function BoardTable({ boardId, properties, entries, cellValues }: BoardTa
                 <tr>
                 {headerGroup.headers.map((header) => {
                     const type = (header.column.columnDef.meta as any)?.type;
+                    const filterValue = header.column.getFilterValue();
                     return (
                         <th key={`${header.id}-filter`} className="border-b border-r px-2 py-1">
-                            {/* TODO: filter control based on `type`
-                               ('text' | 'number' | 'date' | 'boolean'),
-                               reading/writing through
-                               header.column.getFilterValue() and
-                               header.column.setFilterValue(...).
-                               - text: single <input>, setFilterValue(e.target.value)
-                               - number: two <input type="number"> (min/max),
-                                 setFilterValue([min, max]) as a tuple,
-                                 matching the 'inNumberRange' filterFn above
-                               - date: two <input type="date"> (start/end),
-                                 same [start, end] tuple idea, matching the
-                                 custom date filterFn above
-                               - boolean: <select> with All/Yes/No,
-                                 setFilterValue(undefined | true | false) */}
+                            {type === 'text' && (
+                                <input
+                                    type="text"
+                                    placeholder="Filter..."
+                                    value={(filterValue as string) ?? ''}
+                                    onChange={(e) => header.column.setFilterValue(e.target.value || undefined)}
+                                    className="w-full rounded border border-input bg-background px-1 py-0.5 text-xs"
+                                />
+                            )}
+                            {type === 'number' && (
+                                <div className="flex gap-1">
+                                    <input
+                                        type="number"
+                                        placeholder="Min"
+                                        value={(filterValue as [number, number])?.[0] ?? ''}
+                                        onChange={(e) => {
+                                            const [, max] = (filterValue as [number, number]) ?? [undefined, undefined];
+                                            header.column.setFilterValue([e.target.value === '' ? undefined : Number(e.target.value), max]);
+                                        }}
+                                        className="w-1/2 rounded border border-input bg-background px-1 py-0.5 text-xs"
+                                    />
+                                    <input
+                                        type="number"
+                                        placeholder="Max"
+                                        value={(filterValue as [number, number])?.[1] ?? ''}
+                                        onChange={(e) => {
+                                            const [min] = (filterValue as [number, number]) ?? [undefined, undefined];
+                                            header.column.setFilterValue([min, e.target.value === '' ? undefined : Number(e.target.value)]);
+                                        }}
+                                        className="w-1/2 rounded border border-input bg-background px-1 py-0.5 text-xs"
+                                    />
+                                </div>
+                            )}
+                            {type === 'date' && (
+                                <div className="flex gap-1">
+                                    <input
+                                        type="date"
+                                        value={(filterValue as [string, string])?.[0] ?? ''}
+                                        onChange={(e) => {
+                                            const [, end] = (filterValue as [string, string]) ?? [undefined, undefined];
+                                            header.column.setFilterValue([e.target.value || undefined, end]);
+                                        }}
+                                        className="w-1/2 rounded border border-input bg-background px-1 py-0.5 text-xs"
+                                    />
+                                    <input
+                                        type="date"
+                                        value={(filterValue as [string, string])?.[1] ?? ''}
+                                        onChange={(e) => {
+                                            const [start] = (filterValue as [string, string]) ?? [undefined, undefined];
+                                            header.column.setFilterValue([start, e.target.value || undefined]);
+                                        }}
+                                        className="w-1/2 rounded border border-input bg-background px-1 py-0.5 text-xs"
+                                    />
+                                </div>
+                            )}
+                            {type === 'boolean' && (
+                                <select
+                                    value={filterValue === undefined ? '' : String(filterValue)}
+                                    onChange={(e) => header.column.setFilterValue(e.target.value === '' ? undefined : e.target.value === 'true')}
+                                    className="w-full rounded border border-input bg-background px-1 py-0.5 text-xs"
+                                >
+                                    <option value="">All</option>
+                                    <option value="true">Yes</option>
+                                    <option value="false">No</option>
+                                </select>
+                            )}
                         </th>
                     );
                 })}
@@ -234,7 +287,10 @@ export function BoardTable({ boardId, properties, entries, cellValues }: BoardTa
                         <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => addEntry(boardId)}
+                            onClick={async () => {
+                                const newEntryId = await addEntry(boardId);
+                                setOpenEntryId(newEntryId);
+                            }}
                         >
                             <Plus />
                         </Button>
@@ -242,4 +298,14 @@ export function BoardTable({ boardId, properties, entries, cellValues }: BoardTa
                 </tr>
             </tbody>
         </table>
+        <EntryPanel
+            entryId={openEntryId}
+            boardId={boardId}
+            properties={properties}
+            cellValues={cellValues}
+            onOpenChange={(open) => {
+                if (!open) setOpenEntryId(null);
+            }}
+        />
+        </>
     );}

@@ -68,15 +68,21 @@ export async function addEntry(boardId: string) {
         ? Math.max(...existingEntries.map((e) => e.sort_order)) + 1
         : 0;
 
-    const { error: insertError } = await supabase.from('entries').insert({
-        board_id: boardId,
-        sort_order,
-    });
+    const { data: newEntry, error: insertError } = await supabase
+        .from('entries')
+        .insert({
+            board_id: boardId,
+            sort_order,
+        })
+        .select('id')
+        .single();
     if (insertError) {
         throw new Error(`Failed to add entry: ${insertError.message}`);
     }
 
     revalidatePath(`/board/${boardId}`);
+
+    return newEntry.id as string;
 }
 
 export async function updateCellValue(
