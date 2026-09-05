@@ -31,21 +31,60 @@ export function EntryPanel({ entryId, boardId, properties, cellValues, onOpenCha
                     <SheetTitle>Edit entry</SheetTitle>
                 </SheetHeader>
 
-                {/* TODO: map over `properties`, one row per property,
-                   vertical instead of the table's horizontal cells.
-                   Same lookup board-table.tsx already does per cell:
-                     cellValues.find((cv) => cv.entry_id === entryId && cv.property_id === prop.id)
-                   then the same switch(prop.type) picking TextCell /
-                   NumberCell / DateCell / BooleanCell, same onChange
-                   calling updateCellValue(boardId, entryId, prop.id, prop.type, newValue)
-                   as board-table.tsx's cell renderer does today.
-                   Wrap each in a labeled row, something like a div with
-                   a label showing prop.name above the cell component.
-                   entryId is only non-null once the Sheet is actually
-                   open (see the `open` prop above), but it's still typed
-                   as `string | null` here, so a null check (or a
-                   non-null assertion once you're confident) is needed
-                   before passing it into updateCellValue's onChange. */}
+                {properties.map((prop) => {
+                    const cellValue = cellValues.find((cv) => cv.entry_id === entryId && cv.property_id === prop.id);
+                    return (
+                        <div key={prop.id} className="flex flex-col space-y-2 px-4">
+                            <label>{prop.name}</label>
+                            {(() => {
+                                switch (prop.type) {
+                                    case 'text':
+                                        return (
+                                            <TextCell
+                                                value={cellValue?.value_text ?? null}
+                                                onChange={(newValue) => {
+                                                    if (!entryId) return;
+                                                    updateCellValue(boardId, entryId, prop.id, 'text', newValue);
+                                                }}
+                                            />
+                                        );
+                                    case 'number':
+                                        return (
+                                            <NumberCell
+                                                value={cellValue?.value_number ?? null}
+                                                onChange={(newValue) => {
+                                                    if (!entryId) return;
+                                                    updateCellValue(boardId, entryId, prop.id, 'number', newValue);
+                                                }}
+                                            />
+                                        );
+                                    case 'date':
+                                        return (
+                                            <DateCell
+                                                value={cellValue?.value_date ? new Date(cellValue.value_date) : null}
+                                                onChange={(newValue) => {
+                                                    if (!entryId) return;
+                                                    updateCellValue(boardId, entryId, prop.id, 'date', newValue);
+                                                }}
+                                            />
+                                        );
+                                    case 'boolean':
+                                        return (
+                                            <BooleanCell
+                                                value={cellValue?.value_boolean ?? null}
+                                                onChange={(newValue) => {
+                                                    if (!entryId) return;
+                                                    updateCellValue(boardId, entryId, prop.id, 'boolean', newValue);
+                                                }}
+                                            />
+                                        );
+                                    default:
+                                        return null;
+                                }
+                            })()}
+                        </div>
+                    );
+                })}
             </SheetContent>
         </Sheet>
     );
