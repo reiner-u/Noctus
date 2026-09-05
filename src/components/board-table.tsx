@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, Fragment } from 'react';
+import { useMemo, useState, useCallback, useRef, Fragment } from 'react';
 import {
     useReactTable,
     getCoreRowModel,
@@ -11,11 +11,12 @@ import {
     type SortingState,
     type ColumnFiltersState,
 }from '@tanstack/react-table';
-import type { Property, BoardEntry, CellValue } from '@/lib/types';
+import type { Property, PropertyOption, BoardEntry, CellValue } from '@/lib/types';
 import { TextCell } from '@/components/cell-inputs/text-cell';
 import { NumberCell } from '@/components/cell-inputs/number-cell';
 import { DateCell } from '@/components/cell-inputs/date-cell';
 import { BooleanCell } from '@/components/cell-inputs/boolean-cell';
+import { SelectCell } from '@/components/cell-inputs/select-cell';
 import { addEntry, addProperty, updateCellValue, deleteEntry } from '@/lib/actions/boards';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
@@ -27,11 +28,12 @@ interface BoardTableProps {
     boardId: string;
     boardTitle: string;
     properties: Property[];
+    propertyOptions: PropertyOption[];
     entries: BoardEntry[];
     cellValues: CellValue[];
 }
 
-export function BoardTable({ boardId, boardTitle, properties, entries, cellValues }: BoardTableProps) {
+export function BoardTable({ boardId, boardTitle, properties, propertyOptions, entries, cellValues }: BoardTableProps) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
     // Which entry (if any) the side panel is showing, null means closed.
@@ -43,12 +45,103 @@ export function BoardTable({ boardId, boardTitle, properties, entries, cellValue
         setOpenEntryId(newEntryId);
     }
 
+    // PropertyHeader holds its own local edit-mode state (isEditing,
+    // draftType, etc). If the function passed as `header` to TanStack
+    // changes identity on every render, React treats it as a different
+    // component type at that position and remounts it instead of just
+    // updating its props, wiping whatever was mid-edit. Since `columns`
+    // below recomputes on ANY board data change (not just changes to
+    // this specific property, revalidatePath refetches everything), an
+    // inline closure there would get a new identity constantly. This
+    // ref + empty-deps useCallback keeps the same function reference
+    // forever, while still reading fresh data on every call.
+    const latestDataRef = useRef({ properties, cellValues, propertyOptions, boardId });
+    latestDataRef.current = { properties, cellValues, propertyOptions, boardId };
+
+    const renderPropertyHeader = useCallback((headerContext: any) => {
+        const { properties, cellValues, propertyOptions, boardId } = latestDataRef.current;
+        const prop = properties.find((p) => p.id === headerContext.column.id);
+        if (!prop) return null;
+        return <PropertyHeader property={prop} boardId={boardId} cellValues={cellValues} propertyOptions={propertyOptions} column={headerContext.column} />;
+    }, []);
+
+    // Same identity-stability reasoning as renderPropertyHeader above,
+    // just for the actual data cells. TextCell/NumberCell/etc. are
+    // uncontrolled (defaultValue, no local draft state), so remounting
+    // them isn't as visibly broken as PropertyHeader was, but it's the
+    // same underlying issue, worth closing off entirely rather than
+    // leaving a milder version of it in place.
+    const renderCell = useCallback((info: any) => {
+        const { properties, cellValues, propertyOptions, boardId } = latestDataRef.current;
+        const prop = properties.find((p) => p.id === info.column.id);
+        if (!prop) return null;
+        const cellValue = cellValues.find((cv) => cv.entry_id === info.row.original.id && cv.property_id === prop.id) ?? {
+            value_text: null,
+            value_number: null,
+            value_date: null,
+            value_boolean: null,
+            value_option_id: null,
+        };
+        switch (prop.type) {
+            case 'text':
+                return (
+                    <TextCell
+                        value={cellValue.value_text}
+                        onChange={(newValue) => {
+                            updateCellValue(boardId, info.row.original.id, prop.id, 'text', newValue);
+                        }}
+                    />
+                );
+            case 'number':
+                return (
+                    <NumberCell
+                        value={cellValue.value_number}
+                        onChange={(newValue) => {
+                            updateCellValue(boardId, info.row.original.id, prop.id, 'number', newValue);
+                        }}
+                    />
+                );
+            case 'date':
+                return (
+                    <DateCell
+                        value={cellValue.value_date ? new Date(cellValue.value_date) : null}
+                        onChange={(newValue) => {
+                            updateCellValue(boardId, info.row.original.id, prop.id, 'date', newValue);
+                        }}
+                    />
+                );
+            case 'boolean':
+                return (
+                    <BooleanCell
+                        value={cellValue.value_boolean}
+                        onChange={(newValue) => {
+                            updateCellValue(boardId, info.row.original.id, prop.id, 'boolean', newValue);
+                        }}
+                    />
+                );
+            case 'select':
+                return (
+                    <SelectCell
+                        value={cellValue.value_option_id}
+                        options={propertyOptions.filter((opt) => opt.property_id === prop.id)}
+                        onChange={(newValue) => {
+                            updateCellValue(boardId, info.row.original.id, prop.id, 'select', newValue);
+                        }}
+                    />
+                );
+            default:
+                return null;
+        }
+    }, []);
+
     const columns = useMemo(() => properties.map((prop) => ({
             id: prop.id,
             // Lets the filter row (further down) read a column's property
             // type via header.column.columnDef.meta?.type, without having
-            // to search the properties array by id every time.
-            meta: { type: prop.type },
+            // to search the properties array by id every time. `options`
+            // does the same for select columns, the filter row needs the
+            // actual option list to populate its dropdown.
+            meta: { type: prop.type, options: propertyOptions.filter((opt) => opt.property_id === prop.id) },
             // Sorting and filtering both compare whatever the accessor
             // returns, not what `cell` renders (cell is just JSX, TanStack
             // can't read a value out of it). This pulls the raw typed
@@ -63,12 +156,17 @@ export function BoardTable({ boardId, boardTitle, properties, entries, cellValue
                     case 'number': return cv.value_number;
                     case 'date': return cv.value_date;
                     case 'boolean': return cv.value_boolean;
+                    case 'select': return cv.value_option_id;
                     default: return null;
                 }
             },
-            // One filterFn per type, matching the filter control that'll
-            // eventually live in the filter row (still a TODO further
-            // down). 'text' and 'boolean' use TanStack's built-ins.
+            // One filterFn per type, matching the filter control in the
+            // filter row below. 'text' uses TanStack's built-in text
+            // search. 'boolean' and 'select' both use exact-match
+            // ('equals'), their filter controls are single-choice
+            // dropdowns, not free text, so an exact comparison against
+            // the selected value (true/false, or an option id) is what's
+            // actually wanted, not a substring search.
             // 'number' expects a [min, max] tuple as its filter value.
             // 'date' needs a custom function since TanStack has no
             // built-in date-range filter, values here are ISO strings
@@ -76,7 +174,7 @@ export function BoardTable({ boardId, boardTitle, properties, entries, cellValue
             // so they're converted to timestamps before comparing.
             filterFn: (prop.type === 'number'
                 ? 'inNumberRange'
-                : prop.type === 'boolean'
+                : prop.type === 'boolean' || prop.type === 'select'
                     ? 'equals'
                     : prop.type === 'date'
                         ? (row: any, columnId: string, filterValue: [string, string]) => {
@@ -94,58 +192,12 @@ export function BoardTable({ boardId, boardTitle, properties, entries, cellValue
             // instead of ignoring it, since PropertyHeader needs
             // headerContext.column to wire up the sort icon,
             // column.getToggleSortingHandler() and column.getIsSorted().
-            header: (headerContext: any) => (
-                <PropertyHeader property={prop} boardId={boardId} cellValues={cellValues} column={headerContext.column} />
-            ),
-            cell: (info: any) => {
-                const cellValue = cellValues.find((cv) => cv.entry_id === info.row.original.id && cv.property_id === prop.id) ?? {
-                    value_text: null,
-                    value_number: null,
-                    value_date: null,
-                    value_boolean: null,
-                };
-                switch (prop.type) {
-                    case 'text':
-                        return (
-                            <TextCell
-                                value={cellValue.value_text}
-                                onChange={(newValue) => {
-                                    updateCellValue(boardId, info.row.original.id, prop.id, 'text', newValue);
-                                }}
-                            />
-                        );
-                    case 'number':
-                        return (
-                            <NumberCell
-                                value={cellValue.value_number}
-                                onChange={(newValue) => {
-                                    updateCellValue(boardId, info.row.original.id, prop.id, 'number', newValue);
-                                }}
-                            />
-                        );
-                    case 'date':
-                        return (
-                            <DateCell
-                                value={cellValue.value_date ? new Date(cellValue.value_date) : null}
-                                onChange={(newValue) => {
-                                    updateCellValue(boardId, info.row.original.id, prop.id, 'date', newValue);
-                                }}
-                            />
-                        );
-                    case 'boolean':
-                        return (
-                            <BooleanCell
-                                value={cellValue.value_boolean}
-                                onChange={(newValue) => {
-                                    updateCellValue(boardId, info.row.original.id, prop.id, 'boolean', newValue);
-                                }}
-                            />
-                        );
-                    default:
-                        return null;
-                }
-            },
-        })), [properties]);
+            // renderPropertyHeader (defined above) has a stable identity
+            // across renders, unlike an inline closure here would, see
+            // its own comment for why that matters.
+            header: renderPropertyHeader,
+            cell: renderCell,
+        })), [properties, propertyOptions, renderPropertyHeader, renderCell]);
 
     const data = useMemo(() => {
         const entryMap = new Map<string, any>();
@@ -261,6 +313,20 @@ export function BoardTable({ boardId, boardTitle, properties, entries, cellValue
                                     <option value="false">No</option>
                                 </select>
                             )}
+                            {type === 'select' && (
+                                <select
+                                    value={(filterValue as string) ?? ''}
+                                    onChange={(e) => header.column.setFilterValue(e.target.value || undefined)}
+                                    className="w-full rounded border border-input bg-background px-1 py-0.5 text-xs"
+                                >
+                                    <option value="">All</option>
+                                    {((header.column.columnDef.meta as any)?.options ?? []).map((opt: PropertyOption) => (
+                                        <option key={opt.id} value={opt.id}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
                         </th>
                     );
                 })}
@@ -296,6 +362,7 @@ export function BoardTable({ boardId, boardTitle, properties, entries, cellValue
             entryId={openEntryId}
             boardId={boardId}
             properties={properties}
+            propertyOptions={propertyOptions}
             cellValues={cellValues}
             onOpenChange={(open) => {
                 if (!open) setOpenEntryId(null);

@@ -25,6 +25,44 @@ export async function createBoard() {
 }
 
 
+export async function addPropertyOption(propertyId: string, boardId: string, label: string) {
+    const supabase = await createClient();
+
+    const { data: existingOptions, error: fetchError } = await supabase
+        .from('property_options')
+        .select('sort_order')
+        .eq('property_id', propertyId);
+    if (fetchError) {
+        throw new Error(`Failed to fetch existing options: ${fetchError.message}`);
+    }
+
+    const sort_order = existingOptions && existingOptions.length > 0
+        ? Math.max(...existingOptions.map((o) => o.sort_order)) + 1
+        : 0;
+
+    const { error: insertError } = await supabase.from('property_options').insert({
+        property_id: propertyId,
+        label,
+        sort_order,
+    });
+    if (insertError) {
+        throw new Error(`Failed to add option: ${insertError.message}`);
+    }
+
+    revalidatePath(`/board/${boardId}`);
+}
+
+export async function deletePropertyOption(optionId: string, boardId: string) {
+    const supabase = await createClient();
+
+    const { error } = await supabase.from('property_options').delete().eq('id', optionId);
+    if (error) {
+        throw new Error(`Failed to delete option: ${error.message}`);
+    }
+
+    revalidatePath(`/board/${boardId}`);
+}
+
 export async function addProperty(boardId: string, name: string, type: PropertyType) {
     const supabase = await createClient();
 
@@ -111,6 +149,9 @@ export async function updateCellValue(
         case 'boolean':
             cellValueData.value_boolean = value as boolean | null;
             break;
+        case 'select':
+            cellValueData.value_option_id = value as string | null;
+            break;
     }
 
     const { error: upsertError } = await supabase
@@ -175,7 +216,7 @@ export async function updateProperty(propertyId: string, boardId: string, name: 
         throw new Error(`Failed to fetch property: ${fetchError.message}`);
     }
 
-    // Clearing all four typed columns (not just the old type's) matters:
+    // Clearing all five typed columns (not just the old type's) matters:
     // going text -> number -> text later shouldn't resurface leftover
     // value_text data as if it were never gone.
     if (currentProperty.type !== type) {
@@ -186,6 +227,7 @@ export async function updateProperty(propertyId: string, boardId: string, name: 
                 value_number: null,
                 value_date: null,
                 value_boolean: null,
+                value_option_id: null,
             })
             .eq('property_id', propertyId);
         if (clearError) {

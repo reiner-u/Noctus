@@ -49,6 +49,16 @@ export async function getBoard(boardId: string) {
         console.error('Error fetching properties:', propertiesError.message);
         throw new Error('Failed to fetch properties');
     }
+    const { data: propertyOptions, error: propertyOptionsError } = await supabase
+        .from('property_options')
+        .select('*')
+        .in('property_id', properties.map((p) => p.id))
+        .order('sort_order', { ascending: true });
+
+    if (propertyOptionsError) {
+        console.error('Error fetching property options:', propertyOptionsError.message);
+        throw new Error('Failed to fetch property options');
+    }
     const { data: entries, error: entriesError } = await supabase
         .from('entries')
         .select('*')
@@ -69,5 +79,5 @@ export async function getBoard(boardId: string) {
         throw new Error('Failed to fetch cell values');
     }
 
-    return { board, properties, entries, cellValues } as BoardView;
+    return { board, properties, propertyOptions, entries, cellValues } as BoardView;
 }

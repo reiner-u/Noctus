@@ -1,11 +1,12 @@
 'use client'
 
-import type { Property, CellValue, PropertyType } from '@/lib/types';
+import type { Property, PropertyOption, CellValue, PropertyType } from '@/lib/types';
 import { updateCellValue } from '@/lib/actions/boards';
 import { TextCell } from '@/components/cell-inputs/text-cell';
 import { NumberCell } from '@/components/cell-inputs/number-cell';
 import { DateCell } from '@/components/cell-inputs/date-cell';
 import { BooleanCell } from '@/components/cell-inputs/boolean-cell';
+import { SelectCell } from '@/components/cell-inputs/select-cell';
 import {
     Sheet,
     SheetContent,
@@ -17,13 +18,12 @@ interface EntryPanelProps {
     entryId: string | null;
     boardId: string;
     properties: Property[];
+    propertyOptions: PropertyOption[];
     cellValues: CellValue[];
     onOpenChange: (open: boolean) => void;
 }
 
-export function EntryPanel({ entryId, boardId, properties, cellValues, onOpenChange }: EntryPanelProps) {
-    // entryId is null when the panel should be closed, Sheet's own `open`
-    // prop just needs a boolean, `!!entryId` covers that.
+export function EntryPanel({ entryId, boardId, properties, propertyOptions, cellValues, onOpenChange }: EntryPanelProps) {
     return (
         <Sheet open={!!entryId} onOpenChange={onOpenChange}>
             <SheetContent side="right">
@@ -75,6 +75,17 @@ export function EntryPanel({ entryId, boardId, properties, cellValues, onOpenCha
                                                 onChange={(newValue) => {
                                                     if (!entryId) return;
                                                     updateCellValue(boardId, entryId, prop.id, 'boolean', newValue);
+                                                }}
+                                            />
+                                        );
+                                    case 'select':
+                                        return (
+                                            <SelectCell
+                                                value={cellValue?.value_option_id ?? null}
+                                                options={propertyOptions.filter((opt) => opt.property_id === prop.id)}
+                                                onChange={(newValue) => {
+                                                    if (!entryId) return;
+                                                    updateCellValue(boardId, entryId, prop.id, 'select', newValue);
                                                 }}
                                             />
                                         );

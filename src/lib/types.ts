@@ -1,4 +1,4 @@
-export type PropertyType = 'text' | 'number' | 'date' | 'boolean';
+export type PropertyType = 'text' | 'number' | 'date' | 'boolean' | 'select';
 
 export interface Board {
     id: string;
@@ -13,6 +13,15 @@ export interface Property {
     board_id: string;
     name: string;
     type: PropertyType;
+    sort_order: number;
+    created_at: string;
+}
+
+export interface PropertyOption {
+    id: string;
+    property_id: string;
+    label: string;
+    color: string | null;
     sort_order: number;
     created_at: string;
 }
@@ -32,12 +41,14 @@ export interface CellValue {
     value_number: number | null;
     value_date: string | null;
     value_boolean: boolean | null;
+    value_option_id: string | null;
     created_at: string;
 }
 
 export interface BoardView {
     board: Board;
     properties: Property[];
+    propertyOptions: PropertyOption[];
     entries: BoardEntry[];
     cellValues: CellValue[];
 }
