@@ -12,7 +12,6 @@ export async function GET(request: Request) {
         if (error) {
             return NextResponse.json({ error: "Failed login, try again :)" }, { status: 400 });
         }
-        // Redirect to the home page or any other page after successful authentication, page route will be added later
         return NextResponse.redirect(new URL("/", request.url));
         }
     return NextResponse.redirect(new URL("/login", request.url));

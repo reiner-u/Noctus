@@ -6,7 +6,7 @@ import type { PropertyType } from '@/lib/types';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 
-export async function createBoard() {
+export async function createBoard(folderId: string | null = null) {
     const supabase = await createClient();
 
     const { data } = await supabase.auth.getClaims();
@@ -15,6 +15,7 @@ export async function createBoard() {
     const { error } = await supabase.from('boards').insert({
         title: 'Untitled board',
         owner_id: userId,
+        folder_id: folderId,
     });
 
     if (error) {

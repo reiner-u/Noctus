@@ -10,9 +10,6 @@ export default async function AppLayout({
     children: React.ReactNode;
 }) {
     const supabase = await createClient();
-    // TODO: use getClaims() here, not getUser(). Same call I used
-    // in proxy.ts, since it reads straight off the JWT and skips
-    // an extra network round trip.
     const { data } = await supabase.auth.getClaims();
     const claims = data?.claims;
 

@@ -15,7 +15,7 @@ export function TabBar() {
     }
 
     return (
-        <div className="flex border-b">
+        <div className="flex gap-1 border-b px-2 pt-2">
             {openTabs.map((tab) => {
                 const isActive = pathname === `/board/${tab.boardId}`;
                 return (
@@ -38,15 +38,10 @@ export function TabBar() {
                                 // go.
                                 e.stopPropagation();
                                 closeTab(tab.boardId);
-                                // TODO: if this was the active tab, decide
-                                // where to navigate next, the tab was
-                                // showing, so staying on this page after
-                                // closing it would be showing a board with
-                                // no tab for it anymore. Reasonable
-                                // options: the next remaining tab in
-                                // openTabs, or home ('/') if none are
-                                // left. router.push(...) once that's
-                                // decided.
+                                if (isActive) {
+                                    const remainingTabs = openTabs.filter((t) => t.boardId !== tab.boardId);
+                                    router.push(remainingTabs.length > 0 ? `/board/${remainingTabs[0].boardId}` : '/');
+                                }
                             }}
                         >
                             <X className="h-3 w-3" />

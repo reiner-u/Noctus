@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 
 interface OpenTab {
     boardId: string;
@@ -24,15 +24,33 @@ const TabsContext = createContext<TabsContextValue | null>(null);
 
 export function TabsProvider({ children }: { children: React.ReactNode }) {
     const [openTabs, setOpenTabs] = useState<OpenTab[]>([]);
+    // Guards the write-effect below from firing on the very first
+    // render, before the read-effect has had a chance to run. Without
+    // this, the write-effect would fire immediately with the stale
+    // (empty) initial value and overwrite whatever the read-effect just
+    // loaded from localStorage, before that update ever reaches state.
+    const isFirstRender = useRef(true);
 
-    // TODO: this resets to empty on every full page reload, since it's
-    // just useState with nothing backing it. To survive a refresh,
-    // persist to localStorage: read it once when the provider first
-    // mounts (a useEffect with an empty dependency array), and write to
-    // it again inside openTab/closeTab whenever the list changes. Guard
-    // against running this on the server, localStorage doesn't exist
-    // there, and reading it during the initial render (rather than in
-    // useEffect) causes a hydration mismatch between server and client.
+    // Read once on mount. Doesn't run during SSR, useEffect only runs
+    // on the client, so this avoids the server/client mismatch that
+    // reading localStorage during the initial render would cause.
+    useEffect(() => {
+        const storedTabs = localStorage.getItem('openTabs');
+        if (storedTabs) {
+            setOpenTabs(JSON.parse(storedTabs));
+        }
+    }, []);
+
+    // Write back whenever the tab list actually changes, including the
+    // change caused by the read-effect above (harmless, just re-writes
+    // what was already there).
+    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+        localStorage.setItem('openTabs', JSON.stringify(openTabs));
+    }, [openTabs]);
 
     function openTab(boardId: string, title: string) {
         setOpenTabs((prev) => {

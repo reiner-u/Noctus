@@ -3,9 +3,8 @@ import type { Board, Folder, BoardView } from '@/lib/types';
 
 export async function getBoards(): Promise<Board[]> {
     const supabase = await createClient();
-    // TODO: select all from boards, ordered by created_at.
-    // RLS already scopes this to the current user, so I don't need
-    // to filter by owner_id myself.
+    // RLS already scopes this to the current user, no need to filter
+    // by owner_id here.
     const { data, error } = await supabase
         .from('boards')
         .select('*')
@@ -36,14 +35,10 @@ export async function getFolders(): Promise<Folder[]> {
 
 export async function getBoard(boardId: string) {
     const supabase = await createClient();
-    // TODO: four queries here for now. Maybe switch to Supabase's
-    // nested select syntax later so it's one round trip instead of
-    // four, but get the simple version working first.
-    //   1. the board itself, filtered by id
-    //   2. its properties, filtered by board_id, ordered by sort_order
-    //   3. its entries, filtered by board_id, ordered by sort_order
-    //   4. cell_values where entry_id is .in(...) the entry ids from step 3
-    // Return all four together, since BoardTable needs all of them.
+    // Four separate queries rather than one nested select, simpler to
+    // read and to add a fifth to later if needed. Worth revisiting with
+    // Supabase's nested select syntax if this ever needs to be one
+    // round trip instead of four, not necessary yet.
     const { data: board, error: boardError } = await supabase
         .from('boards')
         .select('*')
