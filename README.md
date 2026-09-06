@@ -106,4 +106,4 @@ Server Actions and `revalidatePath` also took some getting used to: mutations ar
 
 ## Documentation
 
-Several planning docs live in the repo root and track scope decisions and build order in more detail than this README does: `noctus-dynamic-boards-plan.md` (the original schema and phase-by-phase build plan), `noctus-phases-part-2.md` (everything after the initial data loop, sort/filter, the select type, row-as-a-page), `noctus-toolbar-redesign-plan.md` (the board header and toolbar layout), and `noctus-infrastructure-log.md` (non-code setup work: OAuth configuration, RLS/GRANT debugging, CI/CD).
+`noctus-toolbar-redesign-plan.md` lives in the repo root and tracks the board header/toolbar layout decisions in more detail than this README does. The original schema plan, the phases-part-2 backlog, and the infrastructure log referenced throughout this README exist as separate reference documents, not as files in this repo.

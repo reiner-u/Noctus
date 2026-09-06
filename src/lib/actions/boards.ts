@@ -24,6 +24,69 @@ export async function createBoard() {
     revalidatePath('/', 'layout');
 }
 
+export async function createFolder(name: string) {
+    const supabase = await createClient();
+
+    const { data } = await supabase.auth.getClaims();
+    const userId = data?.claims.sub;
+
+    const { data: existingFolders, error: fetchError } = await supabase
+        .from('folders')
+        .select('sort_order');
+    if (fetchError) {
+        throw new Error(`Failed to fetch existing folders: ${fetchError.message}`);
+    }
+
+    const sort_order = existingFolders && existingFolders.length > 0
+        ? Math.max(...existingFolders.map((f) => f.sort_order)) + 1
+        : 0;
+
+    const { error: insertError } = await supabase.from('folders').insert({
+        name,
+        owner_id: userId,
+        sort_order,
+    });
+    if (insertError) {
+        throw new Error(`Failed to create folder: ${insertError.message}`);
+    }
+
+    revalidatePath('/', 'layout');
+}
+
+export async function renameFolder(folderId: string, name: string) {
+    const supabase = await createClient();
+
+    const { error } = await supabase.from('folders').update({ name }).eq('id', folderId);
+    if (error) {
+        throw new Error(`Failed to rename folder: ${error.message}`);
+    }
+
+    revalidatePath('/', 'layout');
+}
+
+export async function deleteFolder(folderId: string) {
+    const supabase = await createClient();
+
+    // No need to touch boards.folder_id here, the foreign key is
+    // `on delete set null`, Postgres handles un-grouping them.
+    const { error } = await supabase.from('folders').delete().eq('id', folderId);
+    if (error) {
+        throw new Error(`Failed to delete folder: ${error.message}`);
+    }
+
+    revalidatePath('/', 'layout');
+}
+
+export async function moveBoardToFolder(boardId: string, folderId: string | null) {
+    const supabase = await createClient();
+
+    const { error } = await supabase.from('boards').update({ folder_id: folderId }).eq('id', boardId);
+    if (error) {
+        throw new Error(`Failed to move board: ${error.message}`);
+    }
+
+    revalidatePath('/', 'layout');
+}
 
 export async function addPropertyOption(propertyId: string, boardId: string, label: string) {
     const supabase = await createClient();

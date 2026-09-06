@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import type { Property, PropertyOption, CellValue, PropertyType } from '@/lib/types';
 import { updateProperty, deleteProperty, addPropertyOption, deletePropertyOption } from '@/lib/actions/boards';
 import { Button } from '@/components/ui/button';
-import { Trash2, Check, X, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Trash2, Check, X } from 'lucide-react';
 
 const PROPERTY_TYPES: PropertyType[] = ['text', 'number', 'date', 'boolean', 'select'];
 
@@ -13,15 +13,9 @@ interface PropertyHeaderProps {
     boardId: string;
     cellValues: CellValue[];
     propertyOptions: PropertyOption[];
-    // TanStack's Column object for this header, typed loosely (matches
-    // the `info: any` pattern already used for cell renderers elsewhere).
-    // Gives access to column.getIsSorted() ('asc' | 'desc' | false) and
-    // column.getToggleSortingHandler() (an onClick-ready function, cycles
-    // asc -> desc -> off on each click).
-    column: any;
 }
 
-export function PropertyHeader({ property, boardId, cellValues, propertyOptions, column }: PropertyHeaderProps) {
+export function PropertyHeader({ property, boardId, cellValues, propertyOptions }: PropertyHeaderProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [draftName, setDraftName] = useState(property.name);
     const [draftType, setDraftType] = useState<PropertyType>(property.type);
@@ -170,13 +164,6 @@ export function PropertyHeader({ property, boardId, cellValues, propertyOptions,
             >
                 {property.name}
             </span>
-            <Button
-                variant="ghost"
-                size="icon"
-                onClick={column.getToggleSortingHandler()}
-            >
-                {column.getIsSorted() === 'asc' ? <ArrowUp /> : column.getIsSorted() === 'desc' ? <ArrowDown /> : <ArrowUpDown />}
-            </Button>
             <Button
                 variant="ghost"
                 size="icon"

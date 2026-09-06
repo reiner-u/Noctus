@@ -5,6 +5,15 @@ export interface Board {
     owner_id: string;
     title: string;
     description: string | null;
+    folder_id: string | null;
+    created_at: string;
+}
+
+export interface Folder {
+    id: string;
+    owner_id: string;
+    name: string;
+    sort_order: number;
     created_at: string;
 }
 

@@ -62,7 +62,7 @@ export function BoardTable({ boardId, boardTitle, properties, propertyOptions, e
         const { properties, cellValues, propertyOptions, boardId } = latestDataRef.current;
         const prop = properties.find((p) => p.id === headerContext.column.id);
         if (!prop) return null;
-        return <PropertyHeader property={prop} boardId={boardId} cellValues={cellValues} propertyOptions={propertyOptions} column={headerContext.column} />;
+        return <PropertyHeader property={prop} boardId={boardId} cellValues={cellValues} propertyOptions={propertyOptions} />;
     }, []);
 
     // Same identity-stability reasoning as renderPropertyHeader above,
@@ -189,9 +189,8 @@ export function BoardTable({ boardId, boardTitle, properties, propertyOptions, e
                         }
                         : 'includesString') as any,
             // header now receives TanStack's real context (headerContext)
-            // instead of ignoring it, since PropertyHeader needs
-            // headerContext.column to wire up the sort icon,
-            // column.getToggleSortingHandler() and column.getIsSorted().
+            // instead of ignoring it, used to look up which property
+            // this column belongs to (headerContext.column.id).
             // renderPropertyHeader (defined above) has a stable identity
             // across renders, unlike an inline closure here would, see
             // its own comment for why that matters.
@@ -226,6 +225,9 @@ export function BoardTable({ boardId, boardTitle, properties, propertyOptions, e
         <BoardToolbar
             boardId={boardId}
             boardTitle={boardTitle}
+            properties={properties}
+            sorting={sorting}
+            onSortChange={setSorting}
             onAddProperty={() => addProperty(boardId, 'New property', 'text')}
             onAddEntry={handleAddEntry}
             showFilters={showFilters}

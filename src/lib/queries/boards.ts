@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import type { Board, BoardView } from '@/lib/types';
+import type { Board, Folder, BoardView } from '@/lib/types';
 
 export async function getBoards(): Promise<Board[]> {
     const supabase = await createClient();
@@ -17,6 +17,21 @@ export async function getBoards(): Promise<Board[]> {
     }
 
     return data as Board[];
+}
+
+export async function getFolders(): Promise<Folder[]> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from('folders')
+        .select('*')
+        .order('sort_order', { ascending: true });
+
+    if (error) {
+        console.error('Error fetching folders:', error.message);
+        throw new Error('Failed to fetch folders');
+    }
+
+    return data as Folder[];
 }
 
 export async function getBoard(boardId: string) {
