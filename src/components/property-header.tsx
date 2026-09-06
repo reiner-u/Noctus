@@ -114,10 +114,10 @@ export function PropertyHeader({ property, boardId, cellValues, propertyOptions 
                             </option>
                         ))}
                     </select>
-                    <Button variant="ghost" size="icon" onClick={handleSave}>
+                    <Button variant="ghost" size="icon" onMouseDown={(e) => e.preventDefault()} onClick={handleSave}>
                         <Check />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={handleCancel}>
+                    <Button variant="ghost" size="icon" onMouseDown={(e) => e.preventDefault()} onClick={handleCancel}>
                         <X />
                     </Button>
                 </div>
@@ -129,6 +129,7 @@ export function PropertyHeader({ property, boardId, cellValues, propertyOptions 
                                 <Button
                                     variant="ghost"
                                     size="icon"
+                                    onMouseDown={(e) => e.preventDefault()}
                                     onClick={() => deletePropertyOption(opt.id, boardId)}
                                 >
                                     <X />
@@ -146,7 +147,7 @@ export function PropertyHeader({ property, boardId, cellValues, propertyOptions 
                                 placeholder="New option label"
                                 className="w-full rounded border border-input bg-background px-2 py-1 text-sm"
                             />
-                            <Button variant="ghost" onClick={handleAddOption}>
+                            <Button variant="ghost" onMouseDown={(e) => e.preventDefault()} onClick={handleAddOption}>
                                 Add
                             </Button>
                         </div>

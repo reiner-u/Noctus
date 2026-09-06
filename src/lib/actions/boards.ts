@@ -25,6 +25,72 @@ export async function createBoard(folderId: string | null = null) {
     revalidatePath('/', 'layout');
 }
 
+export async function createMasterScheduleTemplate(folderId: string | null = null) {
+    const supabase = await createClient();
+
+    const { data } = await supabase.auth.getClaims();
+    const userId = data?.claims.sub;
+
+    const { data: board, error: boardError } = await supabase
+        .from('boards')
+        .insert({
+            title: 'Master Schedule',
+            description: 'Assignments, exams, and due dates for the term.',
+            owner_id: userId,
+            folder_id: folderId,
+        })
+        .select('id')
+        .single();
+    if (boardError) {
+        throw new Error(`Failed to create template board: ${boardError.message}`);
+    }
+
+    const propertyDefs: { name: string; type: PropertyType }[] = [
+        { name: 'Name', type: 'text' },
+        { name: 'Progress', type: 'select' },
+        { name: 'Course', type: 'select' },
+        { name: 'Assignment Type', type: 'select' },
+        { name: 'Due Date', type: 'date' },
+    ];
+
+    const { data: properties, error: propertiesError } = await supabase
+        .from('properties')
+        .insert(
+            propertyDefs.map((prop, index) => ({
+                board_id: board.id,
+                name: prop.name,
+                type: prop.type,
+                sort_order: index,
+            }))
+        )
+        .select('id, name');
+    if (propertiesError) {
+        throw new Error(`Failed to create template properties: ${propertiesError.message}`);
+    }
+
+    const progressProperty = properties.find((p) => p.name === 'Progress');
+    const assignmentTypeProperty = properties.find((p) => p.name === 'Assignment Type');
+
+    const optionInserts: { property_id: string; label: string; sort_order: number }[] = [];
+    ['Not Started', 'In Progress', 'Completed'].forEach((label, index) => {
+        if (progressProperty) {
+            optionInserts.push({ property_id: progressProperty.id, label, sort_order: index });
+        }
+    });
+    ['Quiz', 'Exam', 'Assignment', 'Project'].forEach((label, index) => {
+        if (assignmentTypeProperty) {
+            optionInserts.push({ property_id: assignmentTypeProperty.id, label, sort_order: index });
+        }
+    });
+
+    const { error: optionsError } = await supabase.from('property_options').insert(optionInserts);
+    if (optionsError) {
+        throw new Error(`Failed to create template options: ${optionsError.message}`);
+    }
+
+    revalidatePath('/', 'layout');
+}
+
 export async function createFolder(name: string) {
     const supabase = await createClient();
 

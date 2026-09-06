@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import type { Folder } from '@/lib/types';
-import { renameFolder, deleteFolder, createBoard } from '@/lib/actions/boards';
+import { renameFolder, deleteFolder, createBoard, createMasterScheduleTemplate } from '@/lib/actions/boards';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal } from 'lucide-react';
 import {
@@ -78,6 +78,9 @@ export function FolderRow({ folder }: FolderRowProps) {
                 <DropdownMenuContent align="start">
                     <DropdownMenuItem onClick={() => createBoard(folder.id)}>
                         New board
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => createMasterScheduleTemplate(folder.id)}>
+                        Master Schedule template
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         variant="destructive"

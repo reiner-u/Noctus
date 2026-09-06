@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import type { Board, Folder } from '@/lib/types';
 import { SidebarFooter } from '@/components/sidebar-footer';
-import { createBoard, createFolder, deleteBoard, moveBoardToFolder } from '@/lib/actions/boards';
+import { createBoard, createFolder, createMasterScheduleTemplate, deleteBoard, moveBoardToFolder } from '@/lib/actions/boards';
 import { Button } from '@/components/ui/button';
 import { PanelLeftClose, PanelLeftOpen, Plus, MoreHorizontal } from 'lucide-react';
 import { useTabs } from '@/components/tabs-context';
@@ -127,6 +127,9 @@ export function Sidebar({
                                     </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => createFolder('New folder')}>
                                         New folder
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => createMasterScheduleTemplate()}>
+                                        Master Schedule template
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
