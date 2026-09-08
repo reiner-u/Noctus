@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { deleteBoard } from '@/lib/actions/boards';
+import { unstable_rethrow } from 'next/navigation';
 import { Columns3, Rows3, Filter, Trash2 } from 'lucide-react';
 import type { Property } from '@/lib/types';
 import type { SortingState } from '@tanstack/react-table';
@@ -78,9 +79,17 @@ export function BoardToolbar({
             <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => {
+                onClick={async () => {
                     if (confirm(`Delete "${boardTitle}"? This deletes every property, row, and value on it too.`)) {
-                        deleteBoard(boardId);
+                        try {
+                            await deleteBoard(boardId);
+                        } catch (error) {
+                            // Clicking this always deletes the board you're
+                            // currently on, so this always redirects, and
+                            // always needs the same untouched re-throw.
+                            unstable_rethrow(error);
+                            alert(`Couldn't delete: ${error instanceof Error ? error.message : 'unknown error'}`);
+                        }
                     }
                 }}
                 aria-label="Delete board"

@@ -362,9 +362,13 @@ export function BoardTable({ boardId, boardTitle, properties, propertyOptions, e
                             variant="ghost"
                             size="icon"
                             className="opacity-0 transition-opacity group-hover:opacity-100"
-                            onClick={() => {
+                            onClick={async () => {
                                 if (confirm('Delete this row? This deletes every value in it too.')) {
-                                    deleteEntry(row.original.id, boardId);
+                                    try {
+                                        await deleteEntry(row.original.id, boardId);
+                                    } catch (error) {
+                                        alert(`Couldn't delete: ${error instanceof Error ? error.message : 'unknown error'}`);
+                                    }
                                 }
                             }}
                         >

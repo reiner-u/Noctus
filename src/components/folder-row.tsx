@@ -24,14 +24,22 @@ export function FolderRow({ folder }: FolderRowProps) {
     // save logic can check "was this just cancelled?" and skip itself.
     const cancelledRef = useRef(false);
 
-    function handleSave() {
-        setIsEditing(false);
+    async function handleSave() {
         if (!draftName.trim()) {
+            setIsEditing(false);
             setDraftName(folder.name);
             return;
         }
-        if (draftName === folder.name) return;
-        renameFolder(folder.id, draftName);
+        if (draftName === folder.name) {
+            setIsEditing(false);
+            return;
+        }
+        try {
+            await renameFolder(folder.id, draftName);
+            setIsEditing(false);
+        } catch (error) {
+            alert(`Couldn't save: ${error instanceof Error ? error.message : 'unknown error'}`);
+        }
     }
 
     function handleCancel() {
@@ -89,9 +97,13 @@ export function FolderRow({ folder }: FolderRowProps) {
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         variant="destructive"
-                        onClick={() => {
+                        onClick={async () => {
                             if (confirm(`Delete "${folder.name}"? Its boards will be ungrouped, not deleted.`)) {
-                                deleteFolder(folder.id);
+                                try {
+                                    await deleteFolder(folder.id);
+                                } catch (error) {
+                                    alert(`Couldn't delete: ${error instanceof Error ? error.message : 'unknown error'}`);
+                                }
                             }
                         }}
                     >

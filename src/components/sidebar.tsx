@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { unstable_rethrow } from 'next/navigation';
 import type { Board, Folder } from '@/lib/types';
 import { SidebarFooter } from '@/components/sidebar-footer';
 import { createBoard, createFolder, createMasterScheduleTemplate, deleteBoard, moveBoardToFolder } from '@/lib/actions/boards';
@@ -86,9 +87,20 @@ export function Sidebar({
                         )}
                         <DropdownMenuItem
                             variant="destructive"
-                            onClick={() => {
+                            onClick={async () => {
                                 if (confirm(`Delete "${board.title}"? This deletes every property, row, and value on it too.`)) {
-                                    deleteBoard(board.id);
+                                    try {
+                                        await deleteBoard(board.id);
+                                    } catch (error) {
+                                        // deleteBoard calls redirect() when you delete
+                                        // the board you're currently viewing, which
+                                        // works by throwing a special error Next's own
+                                        // framework catches. Re-throw it untouched so
+                                        // that still works, only alert on a genuine
+                                        // failure.
+                                        unstable_rethrow(error);
+                                        alert(`Couldn't delete: ${error instanceof Error ? error.message : 'unknown error'}`);
+                                    }
                                 }
                             }}
                         >

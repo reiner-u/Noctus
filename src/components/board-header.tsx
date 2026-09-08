@@ -19,14 +19,22 @@ export function BoardHeader({ board }: BoardHeaderProps) {
     const cancelledTitleRef = useRef(false);
     const cancelledDescriptionRef = useRef(false);
 
-    function handleSaveTitle() {
-        setIsEditingTitle(false);
+    async function handleSaveTitle() {
         if (!draftTitle.trim()) {
+            setIsEditingTitle(false);
             setDraftTitle(board.title);
             return;
         }
-        if (draftTitle === board.title) return;
-        updateBoard(board.id, draftTitle, board.description);
+        if (draftTitle === board.title) {
+            setIsEditingTitle(false);
+            return;
+        }
+        try {
+            await updateBoard(board.id, draftTitle, board.description);
+            setIsEditingTitle(false);
+        } catch (error) {
+            alert(`Couldn't save: ${error instanceof Error ? error.message : 'unknown error'}`);
+        }
     }
 
     function handleCancelTitle() {
@@ -35,11 +43,18 @@ export function BoardHeader({ board }: BoardHeaderProps) {
         setIsEditingTitle(false);
     }
 
-    function handleSaveDescription() {
-        setIsEditingDescription(false);
+    async function handleSaveDescription() {
         const normalized = draftDescription.trim() || null;
-        if (normalized === (board.description ?? null)) return;
-        updateBoard(board.id, board.title, normalized);
+        if (normalized === (board.description ?? null)) {
+            setIsEditingDescription(false);
+            return;
+        }
+        try {
+            await updateBoard(board.id, board.title, normalized);
+            setIsEditingDescription(false);
+        } catch (error) {
+            alert(`Couldn't save: ${error instanceof Error ? error.message : 'unknown error'}`);
+        }
     }
 
     function handleCancelDescription() {

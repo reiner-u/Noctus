@@ -7,6 +7,7 @@ import { NumberCell } from '@/components/cell-inputs/number-cell';
 import { DateCell } from '@/components/cell-inputs/date-cell';
 import { BooleanCell } from '@/components/cell-inputs/boolean-cell';
 import { SelectCell } from '@/components/cell-inputs/select-cell';
+import { GradeCell } from '@/components/cell-inputs/grade-cell';
 import {
     Sheet,
     SheetContent,
@@ -86,6 +87,16 @@ export function EntryPanel({ entryId, boardId, properties, propertyOptions, cell
                                                 onChange={(newValue) => {
                                                     if (!entryId) return;
                                                     updateCellValue(boardId, entryId, prop.id, 'select', newValue);
+                                                }}
+                                            />
+                                        );
+                                    case 'grade':
+                                        return (
+                                            <GradeCell
+                                                value={{ grade: cellValue?.value_grade ?? null, weight: cellValue?.value_weight ?? null }}
+                                                onChange={(newValue) => {
+                                                    if (!entryId) return;
+                                                    updateCellValue(boardId, entryId, prop.id, 'grade', newValue);
                                                 }}
                                             />
                                         );

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Trash2, Check, X } from 'lucide-react';
 import { getOptionColor } from '@/lib/option-colors';
 
-const PROPERTY_TYPES: PropertyType[] = ['text', 'number', 'date', 'boolean', 'select'];
+const PROPERTY_TYPES: PropertyType[] = ['text', 'number', 'date', 'boolean', 'select', 'grade'];
 
 interface PropertyHeaderProps {
     property: Property;
@@ -26,18 +26,36 @@ export function PropertyHeader({ property, boardId, cellValues, propertyOptions 
     // saving instead of undoing the cancel right after it happens, same
     // pattern BoardHeader uses for its title/description fields.
     const cancelledRef = useRef(false);
+    // window.alert() steals focus when it opens, which fires a native
+    // blur on whatever was focused, with relatedTarget null (focus went
+    // to the browser's dialog, not another element in the container).
+    // Without this guard, that blur reads as "clicked away", re-runs
+    // handleSave, which fails again, alerts again, blurs again. This
+    // blocks the container's onBlur from starting a new save while
+    // one's already in flight, regardless of what triggered the blur.
+    const isBusyRef = useRef(false);
 
     // This property's own options, out of the board-wide list passed
     // down (same "filter the shared array by this property's id"
     // pattern cellValues already uses elsewhere).
     const thisPropertyOptions = propertyOptions.filter((opt) => opt.property_id === property.id);
 
-    function handleAddOption() {
+    async function handleAddOption() {
         if (!newOptionLabel.trim()) {
             return;
         }
-        addPropertyOption(property.id, boardId, newOptionLabel.trim());
-        setNewOptionLabel('');
+        isBusyRef.current = true;
+        try {
+            await addPropertyOption(property.id, boardId, newOptionLabel.trim());
+            setNewOptionLabel('');
+        } catch (error) {
+            // Leave whatever was typed in place on failure, same
+            // reasoning as handleSave below, don't throw away input
+            // over a failed save.
+            alert(`Couldn't add option: ${error instanceof Error ? error.message : 'unknown error'}`);
+        } finally {
+            isBusyRef.current = false;
+        }
     }
 
     // Whether this column currently holds any data at all, across every
@@ -46,10 +64,10 @@ export function PropertyHeader({ property, boardId, cellValues, propertyOptions 
     const hasData = cellValues.some(
         (cv) =>
             cv.property_id === property.id &&
-            (cv.value_text !== null || cv.value_number !== null || cv.value_date !== null || cv.value_boolean !== null || cv.value_option_id !== null)
+            (cv.value_text !== null || cv.value_number !== null || cv.value_date !== null || cv.value_boolean !== null || cv.value_option_id !== null || cv.value_grade !== null || cv.value_weight !== null)
     );
 
-    function handleSave() {
+    async function handleSave() {
         if (!draftName.trim()) {
             return;
         }
@@ -62,8 +80,18 @@ export function PropertyHeader({ property, boardId, cellValues, propertyOptions 
             }
         }
 
-        updateProperty(property.id, boardId, draftName, draftType);
-        setIsEditing(false);
+        try {
+            isBusyRef.current = true;
+            await updateProperty(property.id, boardId, draftName, draftType);
+            setIsEditing(false);
+        } catch (error) {
+            // Stay in edit mode on failure instead of silently reverting,
+            // whatever was typed is still worth keeping around while the
+            // person figures out what went wrong.
+            alert(`Couldn't save: ${error instanceof Error ? error.message : 'unknown error'}`);
+        } finally {
+            isBusyRef.current = false;
+        }
     }
 
     function handleCancel() {
@@ -78,6 +106,12 @@ export function PropertyHeader({ property, boardId, cellValues, propertyOptions 
             <div
                 className="flex flex-col gap-2"
                 onBlur={(e) => {
+                    // A save or add-option attempt already in flight,
+                    // possibly the very alert() that's about to fire is
+                    // what triggered this blur, don't start another one.
+                    if (isBusyRef.current) {
+                        return;
+                    }
                     // If focus is moving to something still inside this
                     // edit UI (the type select, Save/Cancel, the
                     // add-option input), that's not "clicking away",
@@ -135,7 +169,16 @@ export function PropertyHeader({ property, boardId, cellValues, propertyOptions 
                                     variant="ghost"
                                     size="icon"
                                     onMouseDown={(e) => e.preventDefault()}
-                                    onClick={() => deletePropertyOption(opt.id, boardId)}
+                                    onClick={async () => {
+                                        isBusyRef.current = true;
+                                        try {
+                                            await deletePropertyOption(opt.id, boardId);
+                                        } catch (error) {
+                                            alert(`Couldn't delete option: ${error instanceof Error ? error.message : 'unknown error'}`);
+                                        } finally {
+                                            isBusyRef.current = false;
+                                        }
+                                    }}
                                 >
                                     <X />
                                 </Button>
@@ -173,9 +216,13 @@ export function PropertyHeader({ property, boardId, cellValues, propertyOptions 
             <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => {
+                onClick={async () => {
                     if (confirm(`Delete "${property.name}"? This deletes every value stored under it too.`)) {
-                        deleteProperty(property.id, boardId);
+                        try {
+                            await deleteProperty(property.id, boardId);
+                        } catch (error) {
+                            alert(`Couldn't delete: ${error instanceof Error ? error.message : 'unknown error'}`);
+                        }
                     }
                 }}
             >
