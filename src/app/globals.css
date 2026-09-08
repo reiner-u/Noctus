@@ -44,7 +44,7 @@
   --chart-4: var(--accent-cyan);
   --chart-5: var(--accent-gold);
   --radius: 0.625rem;
-  --sidebar: var(--background);
+  --sidebar: color-mix(in oklab, var(--background), var(--foreground) 4%);
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--accent-blue);
   --sidebar-primary-foreground: var(--background);
@@ -86,7 +86,7 @@
   --chart-3: var(--accent-green);
   --chart-4: var(--accent-cyan);
   --chart-5: var(--accent-gold);
-  --sidebar: var(--background);
+  --sidebar: color-mix(in oklab, var(--background), var(--foreground) 4%);
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--accent-blue);
   --sidebar-primary-foreground: var(--background);

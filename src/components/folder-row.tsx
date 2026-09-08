@@ -41,7 +41,7 @@ export function FolderRow({ folder }: FolderRowProps) {
     }
 
     return (
-        <div className="flex items-center justify-between gap-2 p-2">
+        <div className="group flex items-center justify-between gap-2 rounded-md p-2 transition-colors hover:bg-sidebar-accent">
             {isEditing ? (
                 <input
                     type="text"
@@ -71,7 +71,12 @@ export function FolderRow({ folder }: FolderRowProps) {
             )}
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" aria-label="Folder options">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Folder options"
+                        className="opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
+                    >
                         <MoreHorizontal />
                     </Button>
                 </DropdownMenuTrigger>

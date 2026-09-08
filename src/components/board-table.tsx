@@ -17,6 +17,7 @@ import { NumberCell } from '@/components/cell-inputs/number-cell';
 import { DateCell } from '@/components/cell-inputs/date-cell';
 import { BooleanCell } from '@/components/cell-inputs/boolean-cell';
 import { SelectCell } from '@/components/cell-inputs/select-cell';
+import { GradeCell } from '@/components/cell-inputs/grade-cell';
 import { addEntry, addProperty, updateCellValue, deleteEntry } from '@/lib/actions/boards';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
@@ -81,6 +82,8 @@ export function BoardTable({ boardId, boardTitle, properties, propertyOptions, e
             value_date: null,
             value_boolean: null,
             value_option_id: null,
+            value_grade: null,
+            value_weight: null,
         };
         switch (prop.type) {
             case 'text':
@@ -129,6 +132,15 @@ export function BoardTable({ boardId, boardTitle, properties, propertyOptions, e
                         }}
                     />
                 );
+            case 'grade':
+                return (
+                    <GradeCell
+                        value={{ grade: cellValue.value_grade, weight: cellValue.value_weight }}
+                        onChange={(newValue) => {
+                            updateCellValue(boardId, info.row.original.id, prop.id, 'grade', newValue);
+                        }}
+                    />
+                );
             default:
                 return null;
         }
@@ -157,6 +169,7 @@ export function BoardTable({ boardId, boardTitle, properties, propertyOptions, e
                     case 'date': return cv.value_date;
                     case 'boolean': return cv.value_boolean;
                     case 'select': return cv.value_option_id;
+                    case 'grade': return cv.value_grade;
                     default: return null;
                 }
             },
@@ -233,17 +246,18 @@ export function BoardTable({ boardId, boardTitle, properties, propertyOptions, e
             showFilters={showFilters}
             onToggleFilters={() => setShowFilters((prev) => !prev)}
         />
-        <table className="border-collapse">
+        <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+        <table className="w-full border-collapse">
             <thead>
             {table.getHeaderGroups().map((headerGroup) => (
                 <Fragment key={headerGroup.id}>
-                <tr>
+                <tr className="bg-muted/50">
                 {headerGroup.headers.map((header) => (
                     <th key={header.id} className="border-b border-r px-4 py-2 text-left font-semibold">{flexRender(header.column.columnDef.header, header.getContext())}</th>
                 ))}
                 </tr>
                 {showFilters && (
-                <tr>
+                <tr className="bg-muted/50">
                 {headerGroup.headers.map((header) => {
                     const type = (header.column.columnDef.meta as any)?.type;
                     const filterValue = header.column.getFilterValue();
@@ -339,7 +353,7 @@ export function BoardTable({ boardId, boardTitle, properties, propertyOptions, e
             </thead>
             <tbody>
                 {table.getRowModel().rows.map((row) => (
-                    <tr key={row.id}>
+                    <tr key={row.id} className="group transition-colors hover:bg-accent/40">
                     {row.getVisibleCells().map((cell) => (
                         <td key={cell.id} className="border-b border-r px-4 py-2">{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
                     ))}
@@ -347,6 +361,7 @@ export function BoardTable({ boardId, boardTitle, properties, propertyOptions, e
                         <Button
                             variant="ghost"
                             size="icon"
+                            className="opacity-0 transition-opacity group-hover:opacity-100"
                             onClick={() => {
                                 if (confirm('Delete this row? This deletes every value in it too.')) {
                                     deleteEntry(row.original.id, boardId);
@@ -360,6 +375,7 @@ export function BoardTable({ boardId, boardTitle, properties, propertyOptions, e
                 ))}
             </tbody>
         </table>
+        </div>
         <EntryPanel
             entryId={openEntryId}
             boardId={boardId}

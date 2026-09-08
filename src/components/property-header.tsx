@@ -5,6 +5,7 @@ import type { Property, PropertyOption, CellValue, PropertyType } from '@/lib/ty
 import { updateProperty, deleteProperty, addPropertyOption, deletePropertyOption } from '@/lib/actions/boards';
 import { Button } from '@/components/ui/button';
 import { Trash2, Check, X } from 'lucide-react';
+import { getOptionColor } from '@/lib/option-colors';
 
 const PROPERTY_TYPES: PropertyType[] = ['text', 'number', 'date', 'boolean', 'select'];
 
@@ -125,6 +126,10 @@ export function PropertyHeader({ property, boardId, cellValues, propertyOptions 
                     <div className="flex flex-col gap-1 pl-1">
                         {thisPropertyOptions.map((opt) => (
                             <div key={opt.id} className="flex items-center gap-2">
+                                <span
+                                    className="inline-block size-2 shrink-0 rounded-full"
+                                    style={{ backgroundColor: getOptionColor(opt.color) }}
+                                />
                                 <span>{opt.label}</span>
                                 <Button
                                     variant="ghost"

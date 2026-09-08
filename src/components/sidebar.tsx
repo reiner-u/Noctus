@@ -41,7 +41,10 @@ export function Sidebar({
 
     function renderBoardRow(board: Board) {
         return (
-            <div key={board.id} className="flex items-center justify-between gap-2 p-2">
+            <div
+                key={board.id}
+                className="group flex items-center justify-between gap-2 rounded-md p-2 transition-colors hover:bg-sidebar-accent"
+            >
                 <Link
                     href={`/board/${board.id}`}
                     onClick={() => openTab(board.id, board.title)}
@@ -51,7 +54,12 @@ export function Sidebar({
                 </Link>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" aria-label="Board options">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label="Board options"
+                            className="opacity-0 transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100"
+                        >
                             <MoreHorizontal />
                         </Button>
                     </DropdownMenuTrigger>
@@ -93,7 +101,7 @@ export function Sidebar({
     }
 
     return (
-        <aside className={`border-r flex flex-col transition-all ${isCollapsed ? 'w-12' : 'w-64'}`}>
+        <aside className={`flex flex-col border-r bg-sidebar text-sidebar-foreground transition-all ${isCollapsed ? 'w-12' : 'w-64'}`}>
             <div className="p-2">
                 <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(!isCollapsed)}>
                     {isCollapsed ? <PanelLeftOpen /> : <PanelLeftClose />}

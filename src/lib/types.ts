@@ -1,4 +1,4 @@
-export type PropertyType = 'text' | 'number' | 'date' | 'boolean' | 'select';
+export type PropertyType = 'text' | 'number' | 'date' | 'boolean' | 'select' | 'grade';
 
 export interface Board {
     id: string;
@@ -51,6 +51,8 @@ export interface CellValue {
     value_date: string | null;
     value_boolean: boolean | null;
     value_option_id: string | null;
+    value_grade: number | null;
+    value_weight: number | null;
     created_at: string;
 }
 

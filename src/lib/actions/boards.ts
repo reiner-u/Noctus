@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import type { PropertyType } from '@/lib/types';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
+import { nextOptionColor } from '@/lib/option-colors';
 
 export async function createBoard(folderId: string | null = null) {
     const supabase = await createClient();
@@ -71,15 +72,15 @@ export async function createMasterScheduleTemplate(folderId: string | null = nul
     const progressProperty = properties.find((p) => p.name === 'Progress');
     const assignmentTypeProperty = properties.find((p) => p.name === 'Assignment Type');
 
-    const optionInserts: { property_id: string; label: string; sort_order: number }[] = [];
+    const optionInserts: { property_id: string; label: string; sort_order: number; color: string }[] = [];
     ['Not Started', 'In Progress', 'Completed'].forEach((label, index) => {
         if (progressProperty) {
-            optionInserts.push({ property_id: progressProperty.id, label, sort_order: index });
+            optionInserts.push({ property_id: progressProperty.id, label, sort_order: index, color: nextOptionColor(index) });
         }
     });
     ['Quiz', 'Exam', 'Assignment', 'Project'].forEach((label, index) => {
         if (assignmentTypeProperty) {
-            optionInserts.push({ property_id: assignmentTypeProperty.id, label, sort_order: index });
+            optionInserts.push({ property_id: assignmentTypeProperty.id, label, sort_order: index, color: nextOptionColor(index) });
         }
     });
 
@@ -174,6 +175,7 @@ export async function addPropertyOption(propertyId: string, boardId: string, lab
         property_id: propertyId,
         label,
         sort_order,
+        color: nextOptionColor(existingOptions?.length ?? 0),
     });
     if (insertError) {
         throw new Error(`Failed to add option: ${insertError.message}`);
@@ -258,7 +260,7 @@ export async function updateCellValue(
     entryId: string,
     propertyId: string,
     type: PropertyType,
-    value: string | number | Date | boolean | null
+    value: string | number | Date | boolean | null | { grade: number | null; weight: number | null }
 ) {
     const supabase = await createClient();
 
@@ -282,6 +284,12 @@ export async function updateCellValue(
         case 'select':
             cellValueData.value_option_id = value as string | null;
             break;
+        case 'grade': {
+            const gradeValue = value as { grade: number | null; weight: number | null };
+            cellValueData.value_grade = gradeValue.grade;
+            cellValueData.value_weight = gradeValue.weight;
+            break;
+        }
     }
 
     const { error: upsertError } = await supabase
@@ -346,7 +354,7 @@ export async function updateProperty(propertyId: string, boardId: string, name: 
         throw new Error(`Failed to fetch property: ${fetchError.message}`);
     }
 
-    // Clearing all five typed columns (not just the old type's) matters:
+    // Clearing all seven typed columns (not just the old type's) matters:
     // going text -> number -> text later shouldn't resurface leftover
     // value_text data as if it were never gone.
     if (currentProperty.type !== type) {
@@ -358,6 +366,8 @@ export async function updateProperty(propertyId: string, boardId: string, name: 
                 value_date: null,
                 value_boolean: null,
                 value_option_id: null,
+                value_grade: null,
+                value_weight: null,
             })
             .eq('property_id', propertyId);
         if (clearError) {
